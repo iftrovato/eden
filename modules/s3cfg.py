@@ -50,17 +50,15 @@ class S3Config(Storage):
     """
 
     # Used by modules/s3theme.py
-    FORMSTYLE = {"default": formstyle_foundation,
-                 "default_inline": formstyle_foundation_inline,
-                 "bootstrap": formstyle_bootstrap,
-                 "foundation": formstyle_foundation,
-                 "foundation_2col": formstyle_foundation_2col,
-                 "foundation_inline": formstyle_foundation_inline,
-                 "table": formstyle_table,
-                 "table_inline": formstyle_table_inline,
-                 }
+    FORMSTYLE = {
+        "bootstrap": formstyle_bootstrap,
+        "foundation": formstyle_foundation,
+        "foundation_inline": formstyle_foundation_inline,
+        "default": formstyle_default,
+        "default_inline": formstyle_default_inline,
+    }
 
-    # Formats from static/scripts/ui/i18n converted to Python style
+    # Formats from static/scripts/i18n/jquery-ui-i18n.js converted to Python style
     date_formats = {"ar": "%d/%m/%Y",
                     "bs": "%d.%m.%Y",
                     "de": "%d.%m.%Y",
@@ -72,7 +70,6 @@ class S3Config(Storage):
                     "ja": "%Y/%m/%d",
                     "km": "%d-%m-%Y",
                     "ko": "%Y-%m-%d",
-                    #"mn": "",
                     #"ne": "",
                     "prs": "%Y/%m/%d",
                     "ps": "%Y/%m/%d",
@@ -443,12 +440,6 @@ class S3Config(Storage):
         """
         return self.auth.get("person_realm_member_org", False)
 
-    def get_auth_entity_role_manager(self):
-        """
-            Activate Entity Role Manager (=embedded Role Manager Tab for OrgAdmins)
-        """
-        return self.auth.get("entity_role_manager", False)
-
     def get_auth_role_modules(self):
         """
             Which modules are included in the Role Manager
@@ -456,25 +447,26 @@ class S3Config(Storage):
         """
         T = current.T
         return self.auth.get("role_modules", OrderedDict([
-            ("staff", "Staff"),
-            ("vol", "Volunteers"),
-            ("member", "Members"),
-            ("inv", "Warehouses"),
-            ("asset", "Assets"),
-            ("project", "Projects"),
-            ("survey", "Assessments"),
-            ("irs", "Incidents")
+            ("staff", T("Staff")),
+            ("vol", T("Volunteers")),
+            ("member", T("Members")),
+            ("inv", T("Warehouses")),
+            ("asset", T("Assets")),
+            ("project", T("Projects")),
+            ("survey", T("Assessments")),
+            ("irs", T("Incidents"))
         ]))
 
     def get_auth_access_levels(self):
         """
             Access levels for the Role Manager UI
         """
+        T = current.T
         return self.auth.get("access_levels", OrderedDict([
-            ("reader", "Reader"),
-            ("data_entry", "Data Entry"),
-            ("editor", "Editor"),
-            ("super", "Super Editor")
+            ("reader", T("Reader")),
+            ("data_entry", T("Data Entry")),
+            ("editor", T("Editor")),
+            ("super", T("Super Editor"))
         ]))
 
     def get_auth_set_presence_on_login(self):
@@ -579,27 +571,27 @@ class S3Config(Storage):
         return self.base.get("chat_server", False)
 
     def get_chatdb_string(self):
-        chat_server = self.base.get("chat_server", False)
-        db_get = self.database.get
-        
-        if (chat_server["server_db_type"] == "mysql"):
+        chat_server = self.base.get("chat_server",False)
+
+        if(chat_server["server_db_type"] == "mysql"):
             db_string = "mysql://%s:%s@%s:%s/%s" % \
-            (chat_server["server_db_username"] if chat_server["server_db_username"] else db_get("username", "sahana"),
-                chat_server["server_db_password"] if chat_server["server_db_password"] else db_get("password", "password"),
-                chat_server["server_db_ip"] if chat_server["server_db_ip"] else db_get("host", "localhost"),
-                chat_server["server_db_port"] if chat_server["server_db_port"] else db_get("port", 3306),
-                chat_server["server_db"] if chat_server["server_db"] else db_get("database", "openfiredb"))
+            (chat_server["server_db_username"] if chat_server["server_db_username"] else self.database.get("username", "sahana"),
+                chat_server["server_db_password"] if chat_server["server_db_password"] else  self.database.get("password", "password"),
+                chat_server["server_db_ip"] if chat_server["server_db_ip"] else self.database.get("host", "localhost"),
+                chat_server["server_db_port"] if chat_server["server_db_port"] else self.database.get("port", 3306),
+                chat_server["server_db"] if chat_server["server_db"] else self.database.get("database", "openfiredb"))
         elif (chat_server["server_db_type"] == "postgres"):
             db_string = "postgres://%s:%s@%s:%s/%s" % \
-            (chat_server["server_db_username"] if chat_server["server_db_username"] else db_get("username", "sahana"),
-                chat_server["server_db_password"] if chat_server["server_db_password"] else db_get("password", "password"),
-                chat_server["server_db_ip"] if chat_server["server_db_ip"] else db_get("host", "localhost"),
-                chat_server["server_db_port"] if chat_server["server_db_port"] else db_get("port", 5432),
-                chat_server["server_db"] if chat_server["server_db"] else db_get("database", "openfiredb"))
+            (chat_server["server_db_username"] if chat_server["server_db_username"] else self.database.get("username", "sahana"),
+                chat_server["server_db_password"] if chat_server["server_db_password"] else  self.database.get("password", "password"),
+                chat_server["server_db_ip"] if chat_server["server_db_ip"] else self.database.get("host", "localhost"),
+                chat_server["server_db_port"] if chat_server["server_db_port"] else self.database.get("port", 5432),
+                chat_server["server_db"] if chat_server["server_db"] else self.database.get("database", "openfiredb"))
         else:
             from gluon import HTTP
             raise HTTP(501, body="Database type '%s' not recognised - please correct file models/000_config.py." % db_type)
         return db_string
+
 
     def get_base_session_memcache(self):
         """
@@ -677,28 +669,25 @@ class S3Config(Storage):
     # Database settings
     def get_database_type(self):
         return self.database.get("db_type", "sqlite").lower()
-
     def get_database_string(self):
         db_type = self.database.get("db_type", "sqlite").lower()
         pool_size = self.database.get("pool_size", 30)
         if (db_type == "sqlite"):
             db_string = "sqlite://storage.db"
         elif (db_type == "mysql"):
-            db_get = self.database.get
             db_string = "mysql://%s:%s@%s:%s/%s" % \
-                        (db_get("username", "sahana"),
-                         db_get("password", "password"),
-                         db_get("host", "localhost"),
-                         db_get("port", None) or "3306",
-                         db_get("database", "sahana"))
+                        (self.database.get("username", "sahana"),
+                         self.database.get("password", "password"),
+                         self.database.get("host", "localhost"),
+                         self.database.get("port", None) or "3306",
+                         self.database.get("database", "sahana"))
         elif (db_type == "postgres"):
-            db_get = self.database.get
             db_string = "postgres://%s:%s@%s:%s/%s" % \
-                        (db_get("username", "sahana"),
-                         db_get("password", "password"),
-                         db_get("host", "localhost"),
-                         db_get("port", None) or "5432",
-                         db_get("database", "sahana"))
+                        (self.database.get("username", "sahana"),
+                         self.database.get("password", "password"),
+                         self.database.get("host", "localhost"),
+                         self.database.get("port", None) or "5432",
+                         self.database.get("database", "sahana"))
         else:
             from gluon import HTTP
             raise HTTP(501, body="Database type '%s' not recognised - please correct file models/000_config.py." % db_type)
@@ -711,15 +700,13 @@ class S3Config(Storage):
     def get_fin_currencies(self):
         T = current.T
         currencies = {
-            "EUR" : T("Euros"),
-            "GBP" : T("Great British Pounds"),
-            "USD" : T("United States Dollars"),
+            "EUR" :T("Euros"),
+            "GBP" :T("Great British Pounds"),
+            "USD" :T("United States Dollars"),
         }
         return self.fin.get("currencies", currencies)
-
     def get_fin_currency_default(self):
         return self.fin.get("currency_default", "USD") # Dollars
-
     def get_fin_currency_writable(self):
         return self.fin.get("currency_writable", True)
 
@@ -736,8 +723,7 @@ class S3Config(Storage):
             - needed for Earth, MapMaker & GeoCoder
             - defaults to localhost
         """
-        return self.gis.get("api_google",
-                            "ABQIAAAAgB-1pyZu7pKAZrMGv3nksRTpH3CbXHjuCVmaTc5MkkU4wO1RRhQWqp1VGwrG8yPE2KhLCPYhD7itFw")
+        return self.gis.get("api_google", "ABQIAAAAgB-1pyZu7pKAZrMGv3nksRTpH3CbXHjuCVmaTc5MkkU4wO1RRhQWqp1VGwrG8yPE2KhLCPYhD7itFw")
 
     def get_gis_api_yahoo(self):
         """
@@ -1128,7 +1114,6 @@ class S3Config(Storage):
                                                        ("ja", "日本語"),
                                                        ("km", "ភាសាខ្មែរ"),         # Khmer
                                                        ("ko", "한국어"),
-                                                       ("mn", "Монгол хэл"),   # Mongolian
                                                        ("ne", "नेपाली"),          # Nepali
                                                        ("prs", "دری"),         # Dari
                                                        ("ps", "پښتو"),         # Pashto
@@ -1324,70 +1309,12 @@ class S3Config(Storage):
                 return formstyles[setting]
         return setting
 
-    def get_ui_datatables_dom(self):
-        """
-            DOM layout for dataTables:
-            https://datatables.net/reference/option/dom
-        """
-
-        return self.ui.get("datatables_dom", "fril<'dataTable_table't>pi")
-
-    def get_ui_datatables_initComplete(self):
-        """
-            Callback for dataTables
-            - allows moving objects such as data_exports
-        """
-
-        return self.ui.get("datatables_initComplete", None)
-
-    def get_ui_datatables_pagingType(self):
-        """
-            The style of Paging used by dataTables:
-            https://datatables.net/reference/option/pagingType
-        """
-
-        return self.ui.get("datatables_pagingType", "full_numbers")
-
-    def get_ui_datatables_responsive(self):
-        """ Whether dataTables should be responsive when resized """
-
-        return self.ui.get("datatables_responsive", True)
-
     def get_ui_default_cancel_button(self):
         """
             Whether to show a default cancel button in standalone
             create/update forms
         """
         return self.ui.get("default_cancel_button", False)
-        
-    def get_ui_filter_clear(self):
-        """
-            Whether to show a clear button in default FilterForms
-            - and allows possibility to relabel &/or add a class
-        """
-        return self.ui.get("filter_clear", True)
-
-    def get_ui_icons(self):
-        """
-            Standard icon set, one of:
-            - "font-awesome"
-            - "foundation"
-        """
-        return self.ui.get("icons", "font-awesome")
-        
-    def get_ui_custom_icons(self):
-        """
-            Custom icon CSS classes, a dict {abstract name: CSS class},
-            can be used to partially override standard icons
-        """
-        return self.ui.get("custom_icons", None)
-        
-    def get_ui_icon_layout(self):
-        """
-            Callable to render icon HTML, which takes an ICON instance
-            as parameter and returns valid XML as string
-        """
-        return self.ui.get("icon_layout", None)
 
     # -------------------------------------------------------------------------
     def get_ui_auth_user_represent(self):
@@ -1411,7 +1338,7 @@ class S3Config(Storage):
             - specify a list of export formats to restrict
         """
         return self.ui.get("export_formats",
-                           ("cap", "have", "kml", "map", "pdf", "rss", "xls", "xml"))
+                           ["cap", "have", "kml", "map", "pdf", "rss", "xls", "xml"])
 
     def get_ui_hide_report_filter_options(self):
         """
@@ -1457,12 +1384,6 @@ class S3Config(Storage):
             e.g. 'Cell Phone'
         """
         return current.T(self.ui.get("label_mobile_phone", "Mobile Phone"))
-
-    def get_ui_label_permalink(self):
-        """
-            Label for the Permalink on dataTables
-        """
-        return current.T(self.ui.get("label_permalink", "Link to this result"))
 
     def get_ui_label_postcode(self):
         """
@@ -1544,29 +1465,7 @@ class S3Config(Storage):
 
         """
 
-        return self.ui.get("summary", ({"common": True,
-                                        "name": "add",
-                                        "widgets": [{"method": "create"}],
-                                        },
-                                       {"common": True,
-                                        "name": "cms",
-                                        "widgets": [{"method": "cms"}]
-                                        },
-                                       {"name": "table",
-                                        "label": "Table",
-                                        "widgets": [{"method": "datatable"}]
-                                        },
-                                       {"name": "charts",
-                                        "label": "Report",
-                                        "widgets": [{"method": "report",
-                                                     "ajax_init": True}]
-                                        },
-                                       {"name": "map",
-                                        "label": "Map",
-                                        "widgets": [{"method": "map",
-                                                     "ajax_init": True}],
-                                        },
-                                       ))
+        return self.ui.get("summary", None)
 
     def get_ui_filter_auto_submit(self):
         """
@@ -1582,22 +1481,22 @@ class S3Config(Storage):
         """
         return self.ui.get("report_auto_submit", 800)
 
-    def get_ui_use_button_icons(self):
+    def get_ui_use_button_glyphicons(self):
         """
-            Use icons on action buttons (requires corresponding CSS)
+            Use glyphicons on action buttons (requires bootstrap CSS)
         """
-        return self.ui.get("use_button_icons", False)
+        return self.ui.get("use_button_glyphicons", False)
 
     def get_ui_hierarchy_theme(self):
         """
-            Theme for the S3HierarchyWidget.
-            'css' is a folder relative to static/styles
-            - /jstree.css or /jstree.min.css is added as-required
+            Theme for the S3HierarchyWidget: folder, either relative to
+            static/styles/jstree (e.g. "default"), or relative to the
+            application (e.g. "static/styles/jstree/default")
+
+            @note: for right-to-left scripts, the theme folder is expected
+                   to be <themename>-rtl (e.g. "default-rtl")
         """
-        return self.ui.get("hierarchy_theme", dict(css = "plugins",
-                                                   icons = False,
-                                                   stripes = True,
-                                                   ))
+        return self.ui.get("hierarchy_theme", None)
 
     # =========================================================================
     # Messaging
@@ -1962,16 +1861,7 @@ class S3Config(Storage):
             "population_day",
             "population_night".
         """
-        # Only together with people registration:
-        if not self.get_cr_shelter_people_registration():
-            return False
         return self.cr.get("shelter_population_dynamic", False)
-    
-    def get_cr_shelter_people_registration(self):
-        """
-            Disable functionality to track individuals in shelters
-        """
-        return self.cr.get("people_registration", True)
 
     def get_cr_shelter_housing_unit_management(self):
         """
@@ -2128,12 +2018,6 @@ class S3Config(Storage):
             - options are: False, "experience"
         """
         return self.hrm.get("staff_experience", "experience")
-        
-    def get_hrm_salary(self):
-        """
-            Whether to track salaries of staff
-        """
-        return self.hrm.get("salary", False)
 
     def get_hrm_vol_active(self):
         """
@@ -2995,19 +2879,6 @@ class S3Config(Storage):
             Whether Seaport code is unique
         """
         return self.transport.get("seaport_code_unique", False)
-
-    # -------------------------------------------------------------------------
-    # Frontpage Options
-    #
-    def get_frontpage(self, key=None, default=None):
-        """
-            Template-specific frontpage configuration options
-        """
-        
-        if key:
-            return self.frontpage.get(key, default)
-        else:
-            return default
 
     # -------------------------------------------------------------------------
     # Utilities
